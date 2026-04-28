@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Temporal.ContinueAsNew.Worker", "Temporal.ContinueAsNew.Worker\Temporal.ContinueAsNew.Worker.csproj", "{1E4F19BD-0FDF-4CAE-AFD8-D1D7ABB4A3F5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Temporal.ContinueAsNew.Worker.IntegrationTests", "Temporal.ContinueAsNew.Worker.IntegrationTests\Temporal.ContinueAsNew.Worker.IntegrationTests.csproj", "{A7982F01-5085-4214-B348-1972936EA2D7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1E4F19BD-0FDF-4CAE-AFD8-D1D7ABB4A3F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E4F19BD-0FDF-4CAE-AFD8-D1D7ABB4A3F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E4F19BD-0FDF-4CAE-AFD8-D1D7ABB4A3F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E4F19BD-0FDF-4CAE-AFD8-D1D7ABB4A3F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7982F01-5085-4214-B348-1972936EA2D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7982F01-5085-4214-B348-1972936EA2D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7982F01-5085-4214-B348-1972936EA2D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7982F01-5085-4214-B348-1972936EA2D7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
