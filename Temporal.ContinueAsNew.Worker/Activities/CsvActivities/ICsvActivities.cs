@@ -12,7 +12,7 @@ public interface ICsvActivities
     [Activity]
     Task<string> SaveRowsAsync(List<RowDto> rows);
     [Activity]
-    Task<List<RowDto>> GetRowsBatchAsync(string folderPath, int start, int size);
+    Task<List<RowDto>> GetRowsBatchAsync(string folderPath, int start, int? size);
     [Activity]
     Task CleanupAsync(string folderPath);
 }

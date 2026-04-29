@@ -6,7 +6,6 @@ public record ReserveItemsInput(
     string CsvPath,
     string? DataLocation = null,
     int CurrentIndex = 0,
-    int BatchSize = 10,
+    int? BatchSize = null,
     int Processed = 0,
-    int Failed = 0,
     int Total = 0);

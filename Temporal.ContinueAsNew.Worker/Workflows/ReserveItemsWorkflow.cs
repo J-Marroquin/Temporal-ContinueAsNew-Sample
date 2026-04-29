@@ -4,6 +4,7 @@ using Temporal.ContinueAsNew.Worker.Models;
 using Temporal.ContinueAsNew.Worker.Models.DTOs;
 using Temporalio.Api.Enums.V1;
 using Temporalio.Common;
+using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
 namespace Temporal.ContinueAsNew.Worker.Workflows;
@@ -12,18 +13,27 @@ namespace Temporal.ContinueAsNew.Worker.Workflows;
 public class ReserveItemsWorkflow
 {
     private const int DefaultMaxConcurrency = 5;
-
+    
     private int _total;
-    private int _processed;
     private int _failed;
+    private int _startIndex;
+    private int _currentIndex;
+    
+    private readonly List<FailedItemDto> _failedItems = new();
+    
     private bool _cancelRequested;
-
+    
+    [WorkflowQuery]
+    public IReadOnlyList<FailedItemDto> GetFailedItems() => _failedItems;
+    
     [WorkflowQuery]
     public ProgressDto GetProgress() => new ProgressDto
     {
-        Processed = _processed,
+        Processed = _currentIndex - _startIndex,
         Failed = _failed,
-        Total = _total
+        Total = _total,
+        CurrentIndex = _currentIndex,
+        StartIndex = _startIndex,
     };
 
     [WorkflowSignal]
@@ -37,8 +47,8 @@ public class ReserveItemsWorkflow
     [WorkflowRun]
     public async Task<ProcessResponse> RunAsync(ReserveItemsInput input)
     {
-        _processed = input.Processed;
-        _failed = input.Failed;
+        _currentIndex = input.CurrentIndex;
+        _startIndex = input.CurrentIndex;
 
         string dataLocation = input.DataLocation!;
 
@@ -82,12 +92,14 @@ public class ReserveItemsWorkflow
         {
             _total = input.Total;
         }
-
+        
+        var isBatchMode = input.BatchSize.HasValue;
+        
         // Retrieve batch from persisted storage
         var batch = await Workflow.ExecuteActivityAsync(
             (ICsvActivities a) => a.GetRowsBatchAsync(
                 dataLocation,
-                input.CurrentIndex,
+                _currentIndex,
                 input.BatchSize),
             new ActivityOptions
             {
@@ -112,6 +124,13 @@ public class ReserveItemsWorkflow
                 break;
             }
             
+            if (!isBatchMode && Workflow.ContinueAsNewSuggested)
+            {
+                Workflow.Logger.LogDebug("Continue-As-New suggested during full processing. Stopping early.");
+                break;
+            }
+            
+            
             // Acquire a slot before scheduling a new child workflow
             await semaphore.WaitAsync();
 
@@ -122,13 +141,33 @@ public class ReserveItemsWorkflow
                 try
                 {
                     // Execute child workflow for each item
-                    await Workflow.ExecuteChildWorkflowAsync(
+                    var result = await Workflow.ExecuteChildWorkflowAsync(
                         (ProcessItemWorkflow wf) => wf.RunAsync(item),
                         new ChildWorkflowOptions
                         {
                             Id = $"process-item-{row.ItemId}-{input.ImportId}",
                             IdReusePolicy = WorkflowIdReusePolicy.RejectDuplicate
                         });
+
+                    if (result.Code == ProcessResponseCode.Failed)
+                    {
+                        _failed++;
+                        Workflow.Logger.LogWarning("ItemId {ItemId} failed: {Message}", item.ItemId, result.Message);
+                        
+                        _failedItems.Add(new FailedItemDto(
+                            item.ItemId,
+                            result.Message));
+                    }
+                }
+                catch (ChildWorkflowFailureException childEx)
+                {
+                    _failed++;
+                    
+                    _failedItems.Add(new FailedItemDto(
+                        item.ItemId,
+                        childEx.Message));
+                    
+                    Workflow.Logger.LogError(childEx, "Child workflow failed for item {ItemId}", item.ItemId);
                 }
                 finally
                 {
@@ -145,15 +184,20 @@ public class ReserveItemsWorkflow
 
         // Only count processed items that were actually scheduled
         var scheduledCount = tasks.Count;
-        _processed += scheduledCount;
+        
+        _currentIndex += scheduledCount;
 
-        var nextIndex = input.CurrentIndex + scheduledCount;
+        var nextIndex = _currentIndex;
+        
+        var shouldContinueAsNew = nextIndex < _total 
+            || (!isBatchMode && Workflow.ContinueAsNewSuggested);
 
         // Continue-As-New if there are more items to process
-        if (nextIndex < _total || Workflow.ContinueAsNewSuggested)
+        if (shouldContinueAsNew)
         {
             Workflow.Logger.LogInformation(
-                "Continue-As-New triggered. NextIndex={Index}, Suggested={Suggested}",
+                "Continue-As-New triggered. StartIndex={StartIndex} |NextIndex={Index} | Suggested={Suggested}",
+                _startIndex,
                 nextIndex,
                 Workflow.ContinueAsNewSuggested);
             
@@ -161,8 +205,7 @@ public class ReserveItemsWorkflow
             {
                 DataLocation = dataLocation,
                 CurrentIndex = nextIndex,
-                Processed = _processed,
-                Failed = _failed,
+                Processed = _currentIndex - _startIndex,
                 Total = _total
             };
 

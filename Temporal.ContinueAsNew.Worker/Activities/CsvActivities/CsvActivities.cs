@@ -53,15 +53,17 @@ public class CsvActivities : ICsvActivities
     }
     
     [Activity]
-    public async Task<List<RowDto>> GetRowsBatchAsync(string folderPath, int start, int size)
+    public async Task<List<RowDto>> GetRowsBatchAsync(string folderPath, int start, int? size)
     {
-        var files = Directory
+        var filesQuery = Directory
             .GetFiles(folderPath, "*.json")
             .OrderBy(f => f)
-            .Skip(start)
-            .Take(size)
-            .ToList();
-
+            .Skip(start);
+        
+        var files = size.HasValue
+            ? filesQuery.Take(size.Value).ToList()
+            : filesQuery.ToList();
+        
         var result = new List<RowDto>();
 
         foreach (var file in files)
