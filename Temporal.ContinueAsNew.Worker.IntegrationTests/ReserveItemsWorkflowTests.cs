@@ -20,7 +20,7 @@ public class ReserveItemsWorkflowTests : TemporalIntegrationTestBase
     public async Task Success()
     {
         // Arrange
-        var csvPath = Utils.CreateTestCsv("test.csv", rows: 100);
+        var csvPath = Utils.CreateTestCsv("test.csv", rows: 500);
 
         try
         {
@@ -28,8 +28,7 @@ public class ReserveItemsWorkflowTests : TemporalIntegrationTestBase
             var input = new ReserveItemsInput(
                 ImportId: importId,
                 OrderId: "order-1",
-                CsvPath: csvPath, 
-                BatchSize: 50);
+                CsvPath: csvPath);
 
             // Act
             var handle = await Fixture.Client.StartWorkflowAsync(

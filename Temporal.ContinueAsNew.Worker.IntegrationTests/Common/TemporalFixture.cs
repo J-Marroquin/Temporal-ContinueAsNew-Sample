@@ -106,7 +106,7 @@ public class TemporalFixture : IAsyncLifetime
         if(string.IsNullOrWhiteSpace(taskQueue))
             throw new InvalidOperationException("TaskQueue not configured");
         
-        TaskQueue = $"{taskQueue}-{Guid.NewGuid()}"; 
+        TaskQueue = taskQueue;
         
         var loggerFactory = LoggerFactory.Create(builder =>
         {
