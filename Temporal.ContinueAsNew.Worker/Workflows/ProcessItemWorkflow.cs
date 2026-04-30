@@ -16,7 +16,7 @@ public class ProcessItemWorkflow
         Workflow.Logger.LogInformation("Processing item {Id}", item.ItemId);
         
         var isAvailable = await Workflow.ExecuteActivityAsync<IInventoryActivities, bool>(
-            a => a.CheckAvailabilityAsync(item.ItemId),
+            a => a.CheckAvailabilityAsync(item),
             new ActivityOptions
             {
                 StartToCloseTimeout = TimeSpan.FromSeconds(30),

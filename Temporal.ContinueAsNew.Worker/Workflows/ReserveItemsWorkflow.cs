@@ -134,7 +134,7 @@ public class ReserveItemsWorkflow
             // Acquire a slot before scheduling a new child workflow
             await semaphore.WaitAsync();
 
-            var item = new OrderItem(row.ItemId, row.Quantity);
+            var item = new OrderItem(row.ItemId, row.Quantity, input.TenantId);
 
             var task = Workflow.RunTaskAsync(async () =>
             {

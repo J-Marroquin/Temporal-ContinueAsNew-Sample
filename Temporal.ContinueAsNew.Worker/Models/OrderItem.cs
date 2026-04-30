@@ -2,5 +2,6 @@
 
 public record OrderItem(
     string ItemId,
-    int RequestedQuantity
+    int RequestedQuantity,
+    int TenantId
 );

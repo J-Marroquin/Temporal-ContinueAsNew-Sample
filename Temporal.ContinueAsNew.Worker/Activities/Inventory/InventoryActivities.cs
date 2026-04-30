@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Temporal.ContinueAsNew.Worker.Models;
 using Temporal.ContinueAsNew.Worker.Models.DTOs;
+using Temporal.ContinueAsNew.Worker.Sevices;
 using Temporalio.Activities;
 using Temporalio.Exceptions;
 
@@ -11,19 +12,35 @@ public class InventoryActivities : IInventoryActivities
 {
     private readonly HttpClient _http;
     private readonly ILogger<InventoryActivities> _logger;
+    private readonly ITokenProvider _tokenProvider;
     
-    public InventoryActivities(HttpClient http, ILogger<InventoryActivities> logger)
+    public InventoryActivities(
+        HttpClient http, 
+        ITokenProvider tokenProvider,
+        ILogger<InventoryActivities> logger)
     {
         _http = http;
         _logger = logger;
+        _tokenProvider = tokenProvider;
     }
     
     [Activity]
-    public async Task<bool> CheckAvailabilityAsync(string itemId)
+    public async Task<bool> CheckAvailabilityAsync(OrderItem orderItem)
     {
-        _logger.LogInformation("Checking availability for {ItemId}", itemId);
-
-        var product = await _http.GetFromJsonAsync<Product>($"products?itemid={itemId}");
+        _logger.LogInformation("Checking availability for ItemId: {ItemId}", orderItem.ItemId);
+        
+        var token = await _tokenProvider.GetIdentityAccessToken(orderItem.TenantId);
+        
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"products?itemid={orderItem.ItemId}");
+        
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        
+        var response = await _http.SendAsync(request);
+        
+        var product = await response.Content.ReadFromJsonAsync<Product>();
 
         return product?.OnStock > 0;
     }
@@ -33,8 +50,18 @@ public class InventoryActivities : IInventoryActivities
     {
         _logger.LogInformation("Reserving item {ItemId}", orderItem.ItemId);
 
-        var response = await _http.PostAsJsonAsync("reserve", orderItem);
+        var token = await _tokenProvider.GetIdentityAccessToken(orderItem.TenantId);
+        
+        var request = new HttpRequestMessage(HttpMethod.Post, "reserve")
+        {
+            Content = JsonContent.Create(orderItem)
+        };
+        
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
+        var response = await _http.SendAsync(request);
+        
         if (!response.IsSuccessStatusCode)
         {
             var statusCode = (int)response.StatusCode;

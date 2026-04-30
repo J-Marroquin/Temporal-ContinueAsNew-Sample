@@ -7,7 +7,7 @@ namespace Temporal.ContinueAsNew.Worker.Activities.Inventory;
 public interface IInventoryActivities
 {
     [Activity]
-    Task<bool> CheckAvailabilityAsync(string itemId);
+    Task<bool> CheckAvailabilityAsync(OrderItem orderItem);
     [Activity]
     Task<ReserveItemResponseDto> ReserveItemAsync(OrderItem orderItem);
 }
