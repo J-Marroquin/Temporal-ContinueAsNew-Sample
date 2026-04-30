@@ -50,6 +50,16 @@ public class TestHttpMessageHandler : HttpMessageHandler
     {
         var path = request.RequestUri!.AbsolutePath;
 
+        // Identity
+        if (path.Contains(".well-known/openid-configuration"))
+            return HandleDiscovery();
+
+        if (path.Contains("connect/token"))
+            return HandleToken();
+        
+        if (path.Contains("jwks"))
+            return HandleJwks();
+        
         // Handle product lookup 
         if (path.Contains("products"))
             return HandleProducts(request);
@@ -134,5 +144,51 @@ public class TestHttpMessageHandler : HttpMessageHandler
 
         return body?.ItemId ?? "unknown";
         
+    }
+    
+    private HttpResponseMessage HandleDiscovery()
+    {
+        var json = """
+                   {
+                       "issuer": "http://localhost",
+                       "token_endpoint": "http://localhost/connect/token",
+                       "jwks_uri": "http://localhost/.well-known/jwks.json"
+                   }
+                   """;
+
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+        };
+    }
+    
+    private HttpResponseMessage HandleToken()
+    {
+        var json = """
+                   {
+                       "access_token": "fake-token",
+                       "expires_in": 3600,
+                       "token_type": "Bearer"
+                   }
+                   """;
+
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+        };
+    }
+    
+    private HttpResponseMessage HandleJwks()
+    {
+        var json = """
+                   {
+                       "keys": []
+                   }
+                   """;
+
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+        };
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Temporal.ContinueAsNew.Worker.Activities.Inventory;
 using Temporal.ContinueAsNew.Worker.Configuration;
 using Temporal.ContinueAsNew.Worker.DependencyInjection;
+using Temporal.ContinueAsNew.Worker.Sevices;
 using Temporalio.Client;
 using Temporalio.Worker;
 using Xunit.Abstractions;
@@ -76,10 +77,14 @@ public class TemporalFixture : IAsyncLifetime
 
         _builder.Services.AddConfiguration(Configuration);
         _builder.Services.AddActivities();
+        _builder.Services.AddTokenProvider();
         
         handler ??= new TestHttpMessageHandler();
         
         _builder.Services.AddHttpClient<InventoryActivities>()
+            .ConfigurePrimaryHttpMessageHandler(() => handler);
+        
+        _builder.Services.AddHttpClient<ITokenProvider, TokenProvider>()
             .ConfigurePrimaryHttpMessageHandler(() => handler);
         
         var host = _builder.Build();

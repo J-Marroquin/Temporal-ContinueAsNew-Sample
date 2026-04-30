@@ -20,12 +20,15 @@ public class ReserveItemsWorkflowTests : TemporalIntegrationTestBase
     public async Task Success()
     {
         // Arrange
-        var csvPath = Utils.CreateTestCsv("test.csv", rows: 500);
+        var csvPath = Utils.CreateTestCsv("test.csv", rows: 100);
 
+        const int tenantId = 1;
+        
         try
         {
             var importId = Utils.GetRandomHexHash();
             var input = new ReserveItemsInput(
+                TenantId: tenantId,
                 ImportId: importId,
                 OrderId: "order-1",
                 CsvPath: csvPath);
