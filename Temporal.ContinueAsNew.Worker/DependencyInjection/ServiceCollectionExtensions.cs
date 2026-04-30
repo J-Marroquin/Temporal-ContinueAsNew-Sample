@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Temporal.ContinueAsNew.Worker.Activities.CsvActivities;
 using Temporal.ContinueAsNew.Worker.Activities.Inventory;
 using Temporal.ContinueAsNew.Worker.Configuration;
+using Temporal.ContinueAsNew.Worker.Sevices;
 
 namespace Temporal.ContinueAsNew.Worker.DependencyInjection;
 
@@ -49,6 +50,26 @@ public static class ServiceCollectionExtensions
             .Validate(o => !string.IsNullOrWhiteSpace(o.Host), "Temporal Host is required")
             .Validate(o => !string.IsNullOrWhiteSpace(o.TaskQueue), "TaskQueue is required")
             .ValidateOnStart();
+        
+        services.AddOptions<IdentityOptions>()
+            .Bind(configuration.GetSection("Identity"))
+            .Validate(o => !string.IsNullOrWhiteSpace(o.IdentityAuthorityUrl), "IdentityAuthorityUrl is required")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.ClientId), "ClientId is required")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.ClientSecret), "ClientSecret is required")
+            .ValidateOnStart();
+        
+        return services;
+    }
+
+    public static IServiceCollection AddTokenProvider(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        
+        services.AddMemoryCache();
+        
+        services.AddSingleton<ITokenCache, MemoryTokenCache>();
+
+        services.AddHttpClient<ITokenProvider, TokenProvider>();
         
         return services;
     }

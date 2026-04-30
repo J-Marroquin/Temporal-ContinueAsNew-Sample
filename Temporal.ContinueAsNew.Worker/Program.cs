@@ -14,6 +14,7 @@ builder.Logging.AddConsole();
 
 builder.Services.AddConfiguration(builder.Configuration);
 builder.Services.AddActivities();
+builder.Services.AddTokenProvider();
 
 var host = builder.Build();
 
